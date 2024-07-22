@@ -1,0 +1,32 @@
+version: "3.9"
+
+volumes:
+  mongo_db:
+
+services:
+  # Node api service
+  api:
+    container_name: api-server
+    build: .
+    ports:
+      - 5001:5001
+    environment:
+      PORT: 5001
+      CONNECTION_STRING: mongodb://mongo_db:27017/sample-db
+      ACCESS_TOKEN_SECRET: Hello#18936&World*
+      ACCESS_TOKEN_EXPIRY: 1d
+      REFRESH_TOKEN_SECRET: SDNMmsndSBDNnsdbn72bsbdb72726nabfneJQJ%^@dfb
+      REFRESH_TOKEN_EXPIRY: 10d
+    depends_on:
+      - mongo_db
+
+  # Mongodb service
+  mongo_db:
+    container_name: mongodb
+    image: mongo:latest
+    restart: always
+    volumes:
+      - mongo_db:/data/db
+    ports:
+      - 27017:27017
+    command: mongod
