@@ -78,17 +78,26 @@ const getAShorturl = asyncHandler(async (req, res) => {
     );
 });
 
-const updateTimeStampOfShortUrl = async (shortUrl) => {
-  console.log("shortUrl = ", shortUrl);
+const updateTimeStampOfShortUrl = async (url) => {
+  console.log("url = ", url);
   try {
-    const visitHistoryKey = `url:${shortUrl}:history`;
-    const visitHistory = await redisClient.lRange(visitHistoryKey, 0, -1);
+    // get the key
+    const rediKey = `url:${url}:history`;
 
+    // get visited history from redis
+    const visitHistory = await redisClient.lRange(rediKey, 0, -1);
+
+    if (!visitHistory) return;
+
+    // parse the data
     const parsedUpdatedHistory = visitHistory.map((item) => JSON.parse(item));
 
+    console.log(parsedUpdatedHistory);
+
+    // update the data from redis to mongodb
     const updatePromises = parsedUpdatedHistory.map(async (item) => {
       await Url.findOneAndUpdate(
-        { shortUrl },
+        { url },
         {
           $push: {
             visitHistory: {
@@ -101,7 +110,9 @@ const updateTimeStampOfShortUrl = async (shortUrl) => {
     });
 
     await Promise.all(updatePromises);
-    await redisClient.del(visitHistoryKey);
+
+    // delete the data from redis cache
+    await redisClient.del(rediKey);
   } catch (error) {
     console.log(error);
     throw new ApiError(500, "Internal Error");
@@ -115,7 +126,14 @@ const getAnalytics = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide a short url");
   }
 
+  // update time stamp of url from the redis client
+  await updateTimeStampOfShortUrl(url);
+
   const result = await Url.findOne({ shortUrl: url });
+
+  if (!result) {
+    return res.status(400).json(new ApiResponse(400, {}, "Url not found"));
+  }
 
   return res.status(200).json(
     new ApiResponse(
@@ -154,6 +172,25 @@ const deleteShortUrl = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, {}, "Url deleted successfully"));
 });
 
+const getAllRedisData = async () => {
+  try {
+    // get all keys
+    const keys = await redisClient.keys("*");
+    console.log("keys = ", keys);
+    const data = {};
+
+    // fetch values for each keys
+    for (const key of keys) {
+      const value = await redisClient.get(key);
+      data[key] = value;
+    }
+
+    console.log(data);
+  } catch (error) {
+    console.log("Error while fetching redis data = ", error);
+  }
+};
+
 export {
   createNewShortUrl,
   getUserShortUrls,
@@ -161,4 +198,5 @@ export {
   getAnalytics,
   deleteShortUrl,
   updateTimeStampOfShortUrl,
+  getAllRedisData,
 };

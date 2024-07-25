@@ -5,16 +5,25 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const cachedData = asyncHandler(async (req, res, next) => {
   try {
+    // Check Redis connection status
+    const pong = await redisClient.ping();
+    if (pong !== "PONG") {
+      console.error("Redis is not active");
+      return res
+        .status(500)
+        .json(new ApiResponse(500, { message: "Redis is not active" }));
+    }
+
     const { url } = req.params;
 
     const cachedData = await redisClient.get(url);
 
     if (cachedData) {
       console.log("Cache HIT");
-      const visitHostoryKey = `url:${url}:history`;
-      await redisClient.lPush(visitHostoryKey, JSON.stringify(Date.now()));
+      const rediKey = `url:${url}:history`;
+      await redisClient.lPush(rediKey, JSON.stringify(Date.now()));
 
-      const visitHistory = await redisClient.lRange(visitHostoryKey, 0, -1);
+      const visitHistory = await redisClient.lRange(rediKey, 0, -1);
 
       if (visitHistory.length > 10) {
         await updateTimeStampOfShortUrl(url);
