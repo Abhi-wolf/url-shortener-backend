@@ -1,5 +1,8 @@
 import redis from "redis";
 
+/**
+ * A function to connect to redis server
+ */
 const redisClient = redis.createClient({
   host: "127.0.0.1",
   port: 6379,
