@@ -68,6 +68,4 @@ A URL shortening service with user authentication, analytics, rate limiting, and
 
 ### Using Docker
 
-    ```
     docker compose up
-    ```
