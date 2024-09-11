@@ -3,9 +3,12 @@ import redis from "redis";
 /**
  * A function to connect to redis server
  */
+
 const redisClient = redis.createClient({
-  host: process.env.REDIS_URL,
-  port: process.env.REDIS_PORT,
+  socket: {
+    host: process.env.REDIS_HOST || "localhost",
+    port: process.env.REDIS_PORT || 6379,
+  },
 });
 
 redisClient.on("error", (err) => {
@@ -13,7 +16,12 @@ redisClient.on("error", (err) => {
 });
 
 (async () => {
-  await redisClient.connect();
+  try {
+    await redisClient.connect();
+    console.log("SUCCESSFULLY connectED TO REDIS");
+  } catch (err) {
+    console.log("ERROR IN connect TO REDIS");
+  }
 })();
 
 export default redisClient;

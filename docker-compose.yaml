@@ -2,14 +2,36 @@ version: "3.9"
 
 volumes:
   mongo_db:
+  redis_data:
 
 services:
-  # Node api service
+  mongo_db:
+    container_name: mongo_db
+    image: mongo:latest
+    restart: always
+    volumes:
+      - mongo_db:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - mynetwork
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: always
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+
   api:
     container_name: api-server
     build: .
     ports:
-      - 5001:5001
+      - "5001:5001"
     environment:
       PORT: 5001
       CONNECTION_STRING: mongodb://mongo_db:27017/sample-db
@@ -17,16 +39,17 @@ services:
       ACCESS_TOKEN_EXPIRY: 1d
       REFRESH_TOKEN_SECRET: SDNMmsndSBDNnsdbn72bsbdb72726nabfneJQJ%^@dfb
       REFRESH_TOKEN_EXPIRY: 10d
+      CORS_ORIGIN: "*"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RATE_LIMIT: 10
+      EXPIRY_TIME_RATE_LIMIT: 60
+      URL: /api/v1/urls
     depends_on:
       - mongo_db
+      - redis
+    networks:
+      - mynetwork
 
-  # Mongodb service
-  mongo_db:
-    container_name: mongodb
-    image: mongo:latest
-    restart: always
-    volumes:
-      - mongo_db:/data/db
-    ports:
-      - 27017:27017
-    command: mongod
+networks:
+  mynetwork:

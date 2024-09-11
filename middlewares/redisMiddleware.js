@@ -1,4 +1,3 @@
-import { updateTimeStampOfShortUrl } from "../controllers/url.controller.js";
 import redisClient from "../db/redisClient.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -34,14 +33,6 @@ export const cachedData = asyncHandler(async (req, res, next) => {
 
       // store the timestamp in the redis cache
       await redisClient.lPush(rediKey, JSON.stringify(Date.now()));
-
-      // count the number of timestamps for the particular key
-      const visitHistory = await redisClient.lRange(rediKey, 0, -1);
-
-      // if the count if greater than 9 then push these data from redis cache to the mongodb database for persistence
-      if (visitHistory.length > 10) {
-        await updateTimeStampOfShortUrl(url);
-      }
 
       // return the original url from the cache
       return res

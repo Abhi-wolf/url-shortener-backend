@@ -139,7 +139,7 @@ const updateTimeStampOfShortUrl = async (url) => {
     // update the data from redis to mongodb
     const updatePromises = parsedUpdatedHistory.map(async (item) => {
       await Url.findOneAndUpdate(
-        { url },
+        { shortUrl: url },
         {
           $push: {
             visitHistory: {
@@ -195,6 +195,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
       {
         totalClicks: result.visitHistory.length,
         analytics: result.visitHistory,
+        result,
       },
       "Analytics fetched successfully"
     )
@@ -250,25 +251,6 @@ const deleteShortUrl = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, {}, "Url deleted successfully"));
 });
 
-const getAllRedisData = async () => {
-  try {
-    // get all keys
-    const keys = await redisClient.keys("*");
-    console.log("keys = ", keys);
-    const data = {};
-
-    // fetch values for each keys
-    for (const key of keys) {
-      const value = await redisClient.get(key);
-      data[key] = value;
-    }
-
-    console.log(data);
-  } catch (error) {
-    console.log("Error while fetching redis data = ", error);
-  }
-};
-
 // export all the methods
 export {
   createNewShortUrl,
@@ -277,5 +259,4 @@ export {
   getAnalytics,
   deleteShortUrl,
   updateTimeStampOfShortUrl,
-  getAllRedisData,
 };
